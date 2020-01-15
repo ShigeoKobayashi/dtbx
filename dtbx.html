@@ -1,0 +1,263 @@
+<!DOCTYPE html "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang=en>
+<head>
+<title>DTBX: Digital Toolbox (C/C++ API library)</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<meta name="keywords" content="matrix block triangularization triangular sort LU decomposition">
+<meta name="description" content="DTBX: Digital Toolbox (C/C++ API library)">
+<style type=text/css>
+body {color: #3f0f0f; background: #efefef; margin-left: 4em; margin-right: 4em;}
+h1 {color: #f0f0f0; background-color: #30A0FF; border-color: #FF00FF; width: 100%;
+    border-style: solid; border-top-width: 0.1em; border-bottom-width: 0.1em; border-right: none;
+    border-left: none;   padding: 0.1em; font-weight: bold; font-size: 160%;text-align: center;
+}
+h2 {color: #00007f; background-color: #e7e7ff; border-color: #949494;
+    width: 100%; border-style: solid;
+    border-left: 0.6em solid #30A0FF;
+    border-right: none; border-top-width: 0.1em;
+    border-bottom-width: 0.1em;  padding: 0.1em;  font-weight: bold;  font-size: 110%;
+}
+h3 {color: #00007f; padding: 0.2em; font-size: 110%;
+    border-style: solid;
+    border-left: none; border-right: none; border-top-width: 0.05em;
+    border-bottom-width: 0.05em; 
+}
+h4, h5 { color: #000000; padding: 0.2em; font-size: 100%;}
+table { 
+    margin-top: 1em; margin-bottom: 1em; margin-left: 2em; margin-right: 1em;
+    background-color: #000000;
+    border-spacing: 1px;
+}
+th {background: #e7e7ff;}
+td {background: #f3f7ff;}
+dt {margin-top: 0.2em;}
+caption { color: #7f0000;font-weight: bold;}
+pre { margin-top: 1px; margin-bottom: 1px;}
+code { margin-top: 1px; color: #0000ff;}
+kbd { color: #ffffbf;font-weight: bold;}
+blockquote { margin-left: 15px;margin-top: 1px;}
+.console {background: #8f8f8f;color: #ffffff}
+</style>
+</head>
+
+<body>
+<h1>DTBX: Digital Toolbox (C/C++ API library)</h1>
+<div align="right">
+This software can be redistributed under <a href="https://www.gnu.org/licenses/lgpl-3.0.en.html" target="_new">GNU Lesser General Public License</a>.<br/>
+<a href="https://github.com/ShigeoKobayashi/dtbx/" target="_new">Every source code of this software can be obtained through GitHub</a><br/>
+Copylight (c) 2018 Shigeo Kobayashi. All rights reserved.
+</div>
+<hr/>
+Digital Toolbox (C/C++ API library) offers some useful functions(as of 2019) such as:
+<ol>
+<li><a href="#1">Matrix block triangular decomposition</a></li>
+<li><a href="#leq">Linear equation system solver</a></li>
+<li><a href="#sort">Sorting</a> </li>
+</ol>
+
+This software has been tested on Windows-10(32-bit&amp;64-bit) and Linux(32-bit CentOS-5 &amp; 64-bit CentOS-7).<br/>
+To build this software,include "dtbx.h" in your prgram and
+<ul>
+ <li>Linux   ... see makefile.</li>
+ <li>Windows ... follow Visual studio instructions.</li>
+</ul>
+
+<a name="#1"></a>
+<H2>Matrix block triangular decomposition</H2>
+Matrix block triangular decomposition is sometimes useful to solve linear equation system such as <br/>
+<pre>    Ax=y </pre>,where A is a square matrix,x and y are solution and constant vector respectively.<br/>
+<b>The following explanation is also applicable to 
+decompose a large non-linear equation system</b> to a sequence of smaller sized non-linear equation systems,if A is a Jacobian matrix of non-linear eqation system,<br/>
+
+It is sometimes possible to decompose A into a sequence of smaller sized sub-matrices as <br/>
+<pre>    Ax=y  ===&gt;  A<sub>i</sub>x<sub>i</sub>=y<sub>i</sub> i=0,1,2...</pre>
+where A<sub>i</sub> and x<sub>i</sub> are subset of A and x respectively, but y<sub>i</sub> is not a subset of y but derived from y,A and x.<br/>
+For example,the left matrix A(and x,y) shown bellow can be rearranged to the right one by exchanging 
+some columns and rows.<br/>
+(1 means the element of any non-zero value.)
+<p/><pre>
+     1 0 0 1 0 0 1 1  x<sub>0</sub> y<sub>0</sub>         A<sub>0</sub> 1 1 0 0 0 0 0 0  x<sub>4</sub> y<sub>3</sub>
+     1 0 0 0 0 1 1 1  x<sub>1</sub> y<sub>1</sub>         A<sub>0</sub> 1 1 0 0 0 0 0 0  x<sub>3</sub> y<sub>5</sub>
+     0 0 0 0 0 1 0 1  x<sub>2</sub> y<sub>2</sub>         A<sub>1</sub> 0 0 1 1 1 0 0 0  x<sub>7</sub> y<sub>4</sub>
+     0 0 0 1 1 0 0 0  x<sub>3</sub> y<sub>3</sub>         A<sub>1</sub> 0 0 1 1 1 0 0 0  x<sub>2</sub> y<sub>6</sub>
+ <b>A</b>   0 1 1 0 0 0 0 1  x<sub>4</sub> y<sub>4</sub>   ==&gt;   A<sub>1</sub> 0 0 1 1 1 0 0 0  x<sub>1</sub> y<sub>7</sub>
+     0 0 0 1 1 0 0 0  x<sub>5</sub> y<sub>5</sub>         A<sub>2</sub> 0 0 1 0 0 1 0 0  x<sub>5</sub> y<sub>2</sub>
+     0 1 1 0 0 0 0 1  x<sub>6</sub> y<sub>6</sub>         A<sub>3</sub> 0 1 1 0 0 0 1 1  x<sub>6</sub> y<sub>0</sub>
+     0 1 1 0 0 0 0 1  x<sub>7</sub> y<sub>7</sub>         A<sub>3</sub> 0 0 1 0 0 1 1 1  x<sub>0</sub> y<sub>1</sub>
+</pre><p/>
+Seeing the right 8x8 matrix,it is obvious that Ax=y can be divided into 4 subsets as
+ A<sub>i</sub>x<sub>j</sub>=y<sub>k</sub>,i = 0,1,2,3<br/>
+Where the size of A<sub>0</sub> is 2x2,A<sub>1</sub> is 3x3,A<sub>2</sub> is 1x1,and A<sub>3</sub> is 2x2.<br/>
+
+<br/>
+Ignoring the actual element value of A, y can be represented as y<sub>i</sub>=f<sub>i</sub>(x<sub>j</sub>,x<sub>k</sub>,x<sub>l</sub>,...</sub>). in general form.<br/>
+For instance y<sub>0</sub>=f<sub>0</sub>(x<sub>0</sub>,x<sub>3</sub>,x<sub>6</sub>,x<sub>7</sub>),in above example(see row<sub>0</sub> of the left matrix).<br/>
+In graphically,edges(arrows) starting from nodes x<sub>0</sub>,x<sub>3</sub>,x<sub>6</sub>,and x<sub>7</sub> end to y<sub>0</sub>.<p/>
+The steps to decompose A are:
+<ol>
+<li><a href="#pairing">
+Make 1 to 1 correspondings between y and x(pairing)</a>. This is the same as to set all diagonal elements of A be non-zero by exchanging some rows and columns. </li>
+<li><a href="#divide">Add reverse arrow from each y to paired x</a>. This creates loops. The total number of the loops is the size of A.</li>
+<li><a href="#divide">Merge loops in the same order to larger loops</a>.</li>
+</ol>
+Y's and x's in the same loop construct 1 equation system solved. The order of loops are the order of computing equation systems.
+
+
+<a name="#div"></a>
+<h3>int	DtxDivideMatrix(int n,void *A,int y[],int x[],int sizes[],int (*IsNonZeroElement)(void *A,int I,int J,int n))
+</h3>
+ <b>DtxDivideMatrix()</b> divides the matrix given(=A) into a sequence of smaller sized matrices.<br/>
+Because the element value of the given matrix is zero or non-zero is the only information needed,this function is not interested in the type of matrix(and it's element type),
+the user must provide the function IsNonZeroElement() which tells the specified element A[I,J] is zero or non-zero.<br/>
+The resulting divided submatrices can be obtained by y[],x[],and sizes[].
+<p/><pre>
+  n      ... [IN]  The size of the (square)matrix divided.
+  A      ... [IN]  (square)matrix divided or any information for the matrix,which is passed to the user 
+                   supplied function IsNonZeroElement(). DtxDivideMatrix() never touch this A.
+  y[]    ... [OUT] Row numbers of A are stored on exit.
+  x[]    ... [OUT] Column numbers of A are stored on exit.
+  sizes[]... [OUT] Sizes of divided sub-matrices.
+                   If sizes[0] is 3,then rows from y[0] to y[2] and columns from x[0] to x[2]
+                   form the first divided sub-matrix of A. 
+  IsNonZeroElement(void *A,int I,int J,int n)
+         ... [IN]  The user specified function which indicates the element A[I,J] is zero(returns 0)
+                   or non-zero(return non-zero value). n is the size of A.
+                   Typically,IsNonZeroElement() would be:
+<code>
+                   int IsNonZeroElement(void *A,int i,int j,int n)
+                   {
+	                if(((double*)A)[MAT_INDEX(i,j,n)]!=0.0) return 1;
+	                return 0;
+                   }
+</code>
+
+  returns &gt 0;
+         ... totoal number of sub-matrices when A is successfully divided.
+  other  ... A is not divided (A is a singular matrix).
+ </pre><p/>
+The usage of DtxDivideMatrix() can be found in the source codes of <a href="#leq">DtxLeqDivSolve()</a>.
+
+<a name="#pairing"></a>
+<h3>int DtxSelectPair(int n,int lpair[],int rpair[],int num_r[],int *rv[])</h3>
+ DtxSelectPair() creates 1 to 1 correspondences(pairs) between left(y) and right(x) hand side variables.<br/>
+<p/><pre>
+   n             ... [IN]  total number of variables(total number of y or x).
+   paired_x[n]   ... [OUT] 1 to 1 correspondences resulted. 
+                           the left hand side variable(y) i is related to the right hand side variable paired_x[i].
+   paired_y[n]   ... [OUT] 1 to 1 correspondences resulted.
+                           the right hand side variable(x) i is related to the left hand side variable paired_y[i].
+   num_r[n]      ... [IN]  num_r[i] is the total number of the right hand side variables of the variable i.
+   rv[]          ... [IN]  rv[i] is the pointer to the array holding the right hand side variables of i. 
+                           rv[i][j] is the jth right hand side variable of the left hand side variable i.
+
+   returns 0     ... All varables are successfully paired each other.
+           other ... Failed to make pairs.
+</pre><p/>
+After successfull completion,y[i] is paired with x[paired_x[i]], or x[i] is paired with y[paired_y[i]].<br/>
+num_r[] and rv[] are data structure describing the functional relations between y and x.<br/>
+For example, if y<sub>0</sub>=f<sub>0</sub>(x<sub>0</sub>,x<sub>3</sub>,x<sub>6</sub>,x<sub>7</sub>) then
+<p/><pre>
+  num_r[0] = 4 
+  rv[0]    = {0,3,6,7}
+</pre><p/>
+The results of this function can be passed to the next <a href="#divide">DtxDividePairedMatrix()</a>.<br/>
+But,it must be noted that the contents of rv[] must be renumbered so that y<sub>i</sub> is paired with x<sub>i</sub><br/>
+ because <b>DtxDividePairedMatrix() assumes y<sub>i</sub> is paired with x<sub>i</sub></b>.<br/>
+The example codes for renumbering of rv[] can be found in <a href="#div">DtxDivideMatrix()</a>.
+
+<a name="#divide"></a>
+<h3>int DtxDividePairedMatrix(int n,int order[],int block[],int num_r[],int *rv[])</h3>
+DtxDividePairedMatrix() divides a matrix(or equation system) into a series of smaller sized matrices.<br/>
+This function assumes that the left hand side valiable y<sub>i</sub> and the right hand side variable x<sub>i</sub> are paired each other.
+<p/><pre> 
+   n        ... [IN]  the total number of variables(total number of y or x).
+   order[n] ... [OUT] variables sorted to the order of matrices devided.
+   block[n] ... [OUT] sizes of devided matrices.
+   num_r[n] ... [IN]  the number of the right hand side variables. The nuber of the right hand side variables of the variable i is num_r[i].
+   rv[]     ... [IN]  pointer to the array having the right hand side variables. The right hand size variavles of the variavle i are stored to rv[i].
+
+   returns the number of total matrices divied (>0),otherwise negative error code.
+</pre><p/>
+
+<a name="#leq"></a>
+<H2>Linear equation system solver</H2>
+Linear equation system solver offers functions to solve linear equation systems such  as:
+<pre>  Ax = b </pre>
+where A is a coefficient matrix of size n,x is a solution vector,and b is a constant vector.<br/>
+The main functions are:<br/>
+<ul>
+<li><b><u>int DtxLeqSolve(double *x, double *A, double *b, int n)</u></b>  <br/>
+ Solves Ax=b directly(after LU decomposition)</li>
+<li><b><u>int DtxLeqDivSolve(double *x, double *A, double *b, int n)</u></b> <br/>
+ Solves Ax=b by decomposing into smaller sized equations by calling <a href="#div">DtxDivideMatrix()</a> 
+and DtxLeqSolve().
+</li>
+</ul>
+Where A is a coeficient matrix of size nxn,x and b are solution and constant vectors of size n respectively.<br/>
+DtxLeqSolve() and DtxLeqDivSolve() returns 0 after successive computation,or returns negative value when A is singular or any error occures.<br/>
+Both functions allocate some working memeries and free them on exit which may be inefficient if they are called frequently
+(it is easy to change such memories be prepaired by caller,see source codes.).<br/>
+<b>Both functions destroy the contents of A,A should be saved before calling if necessary.</b>
+<p/>
+<b>[Matrix indexing]</b><blockquote>
+Because C does not support multi-dimensional array like FORTRAN or other languages.<br/>
+To access A<sub>i,j</sub> element of A,use MAT_INDEX(i,j,n) macro defined in dtbx.h as
+<pre>  #define MAT_INDEX(i,j,M)   ((i)*(M)+j)</pre>
+If FORTRAN compatible memory allocation is prefferable,redefine MAT_INDEX(i,j,M) as
+<pre>  #define MAT_INDEX(i,j,M)   ((j)*(M)+i)</pre>
+and re-compile everything.
+</blockquote>
+<p/>
+Linear equation system solver offers 2 more fuinctions:
+<ul>
+<li><b><u>int DtxLuDecompose(double *A, double *scales, int *index, int n)</u></b>
+<pre>
+   decompose given matrix A to LU form. L is the lower triangular, and U is the upper triangular matrix.
+   L and U are stored A.
+   A         ... [IN/OUT], Matrix to be decomposed,and result of decomposition are stored on exit.
+   scales[n] ... [OUT], work array for pivotting.
+   index [n] ... [OUT], indices for pivotting,which is used later in DtxLuSolve()
+
+   returns 0,  normally decomposed.
+          -k(negative), failed to decompose when processing A[k-1,*].
+</pre>
+</li>
+<li><b><u>void DtxLuSolve(double *x, double *A, double *b, int *index, int n)
+</u></b>
+<pre>
+   solves linear equation system Ax=b, A must be processed by DtxLuDecompose() before hand.
+   index[n] must be the array also processed by DtxLuDecompose().
+</pre>
+</li>
+</ul>
+
+<a name="#sort"></a>
+<H2>Sorting</H2>
+Following 3 functions are available for sorting.
+<p/>
+<pre>
+  <b>heap   sort:</b> void DtxHeapSort  (void *Target,int n,int (*compare)(void *Target,int i,int j),void (*swap)(void *Target,int i,int j) )
+  <b>bubble sort:</b> void DtxBubbleSort(void *Target,int n,int (*compare)(void *Target,int i,int j),void (*swap)(void *Target,int i,int j) )
+  <b>quick  sort:</b> void DtxQuickSort (void *Target,int n,int (*compare)(void *Target,int i,int j),void (*swap)(void *Target,int i,int j) )
+</pre><p/>
+
+<b>void *Target</b> is a pointer of the target to be sorted.<br/>
+These 3 functions are not interrested in the target type being sorted,because comparison and exchange of 2 elements are done by the user.<br/>
+The last 2 arguments,<b>compare</b> and <b>swap</b>, perform actual sort operations(compares elements and exchanges(swaps) elements of <b>void *Target</b> respectively.<br/>
+<b>void *Target</b> can be anything of which element can be identified by it's index.<br/>
+<b>n</b> is the element size of <b>Target</b>.
+<pre>
+<b>int (*compare)(void *Target,int i,int j)</b> must return:
+     positive value(&gt;0) if Target[i]&gt;Target[j]
+     0                  if Target[i]==Target[j]
+     negative value(&lt;0) if Target[i]&lt;Target[j]
+
+<b>void (*swap)(void *Target,int i,int j)</b> must exchnage Target[i] and Target[j].
+</pre>
+
+<hr/>
+<div align="right">
+Shigeo Kobayashi 2019-11-30
+</div>
+<hr/>
+</body>
+</html>

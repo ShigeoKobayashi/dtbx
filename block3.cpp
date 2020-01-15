@@ -7,7 +7,6 @@
  */
 
 #include "stdafx.h"
-#include "templates.h"
 
  typedef struct {
 	 int *a1;
@@ -37,8 +36,30 @@
 	 b->a2[j] = t;
  }
 
+ //
+ // DtxDivideMatrix() divides a matrix A into a series of smaller sized matrices.
+ // This function is not interested in the type of matrix(and it's elements).
+ // Because the element is zero or non-zero is the only information needed,
+ // the user must provide the function address(IsNonZeroElement) which tells the specified element
+ // is zero or non-zero.
+ // The resulting divided submatrices can be obtained by lhsvs[],rhsvs[],and sizes[].
+ //
+ //  n      ... [IN] the size of the (square)matrix divided.
+ //  A      ... [IN] (square)matrix divided or any information for the matrix only passed to the user 
+ //                  supplied function IsNonZeroElement(). This function never touch this A.
+ //  rhsv[] ... [OUT] Row numbers of A are stored on exit.
+ //  lhsv[] ... [OUT] Column numbers of A are stored on exit.
+ //  sizes[]... [OUT] Sizes of divided sub-matrices.
+ //                   If sizes[0] is 3,then rows rhsv[0] to rhsv[2] and columns rhsv[0] to rhsv[2]
+ //                   forms the first sub-matrix divided. 
+ //  IsNonZeroElement
+ //         ... [IN]  User specified function which indicates the element A[I,J] is zero(returns 0)
+ //                   or non-zero(return non-zero value). n is the size of A.
+ //  returns >0     ... totoal number of sub-matrices when A is successfully divided.
+ //          other  ... A is not divided (A is a singular matrix).
+ //
  DTX_EXPORT(int) 
-	DtxDivideMatrix(int n,void *A,int lhsvs[],int rhsvs[],int sizes[],int (*IsNonZeroElement)(void *A,int I,int J,int M))
+	DtxDivideMatrix(int n,void *A,int lhsvs[],int rhsvs[],int sizes[],int (*IsNonZeroElement)(void *A,int I,int J,int n))
  {
 	int       e = 0;
 
@@ -107,6 +128,19 @@
 		memcpy(lhsvs,pl,sizeof(int)*n);
 
 #ifdef _DEBUG
+		printf("\n\n DtxDivideMatrix(), resulting re-arranged matrix:\n");
+		for(int i=0;i<n;++i) {
+			printf("  Y%d=",lhsvs[i]);
+			for(int j=0;j<n;++j) {
+				if(IsNonZeroElement(A,lhsvs[i],rhsvs[j],n)) printf(" 1");
+				else                                        printf(" 0");
+			}
+			printf("\n");
+		}
+		printf("  X =");
+		for(int j=0;j<n;++j) printf(" %d",rhsvs[j]);
+		printf("\n");
+
 		printf("\n\n DtxDivideMatrix(), sub-matrices after division:\n");
 		for(int i=0;i<n;++i) {
 			printf("  %d) %d %d %d\n",i,lhsvs[i],rhsvs[i],sizes[i]);
@@ -123,15 +157,18 @@
 /*
   Creates 1 to 1 relations between left and right hand side variables.
    nv        ... IN:total number of variables.
-   lpair[nv] ... OUT:1 to 1 relations resulted. left variable i is related to the right variable lpair[i].
-   rpair[nv] ... OUT:1 to 1 relations resulted. right variable i is related to the left variable rpair[i].
+   paired_x[nv] ... OUT:1 to 1 relations resulted. left variable i is related to the right variable paired_x[i].
+   paired_y[nv] ... OUT:1 to 1 relations resulted. right variable i is related to the left variable paired_y[i].
    num_r[nv] ... IN:num_r[i] is a number of right hand side variables of the variable i.
    rv[]      ... IN:rv[i] is a pointer of the array holding the right hand side variable of i. 
                   rv[i][j] is the jth right hand side variable of the left variable i.
- Note: All variables must be noted by the number(can be indeces) from 0 to (nv-1).
+   returns 0      ... All varables are successfully paired.
+           other  ... Failed to make pairs.
+
+				  Note: All variables must be noted by the number(can be indeces) from 0 to (nv-1).
 */
  DTX_EXPORT(int) 
-	 DtxSelectPair(int nv,int lpair[],int rpair[],int num_r[],int *rv[])
+	 DtxSelectPair(int nv,int paired_x[],int paired_y[],int num_r[],int *rv[])
  {
 	int e = 0;
 	try {
@@ -145,8 +182,8 @@
 		int ir;
 
 		for(int i=0;i<nv;++i) {
-			lpair[i] = -1;
-			rpair[i] = -1;
+			paired_x[i] = -1;
+			paired_y[i] = -1;
 		}
 
 		memset(nr,0,mb);
@@ -161,13 +198,13 @@
 				}
 				Stack.Push(il);
 				ir = (rv[il])[ixr];
-				il = rpair[ir];
+				il = paired_y[ir];
 			} while(il>=0);
 
 			while((il = Stack.Pop())>=0) {
-				int t = lpair[il];
-				lpair[il] = ir;
-				rpair[ir] = il;
+				int t = paired_x[il];
+				paired_x[il] = ir;
+				paired_y[ir] = il;
 				ir = t;
 			}
 		}

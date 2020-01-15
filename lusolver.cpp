@@ -122,9 +122,7 @@ DTX_EXPORT(int)
 		if(A[0]==0.0) return -1;
 		x[0] = b[0]/A[0];
 		return 0;
-	}
-
-	{
+	} else {
 		TArray<double> scales(n);
 		TArray<int>    index(n);
 		int    *ps = index.Array();
