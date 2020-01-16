@@ -24,12 +24,13 @@ class TMemory
 {
 
 public:
-	TMemory(int mx)
+	TMemory(size_t mx)
 	{
-		m_bytes = 0;
+		m_bytes   = 0;
+		m_pmemory = NULL;
 		if(mx<=0) throw new CException(-1,"ERROR[TMemory]: Zero or negative memory size.");
 		m_pmemory = MemAlloc(mx*sizeof(T));
-		m_bytes = mx*sizeof(T);
+		m_bytes   = mx*sizeof(T);
 	};
 
 	~TMemory()
@@ -88,7 +89,7 @@ class TArray: public TMemory <T>
 {
 
 public:
-	TArray(size_t mx) : TMemory(mx)
+	TArray(size_t mx) : TArray::TMemory(mx)
 	{
 		m_Size   = mx;
 	};
@@ -98,57 +99,57 @@ public:
 		m_Size   = 0;
 	};
 
-	T& operator [](int i) { return Address()[i]; };
+	T& operator [](int i) { return this->Address()[i]; };
 
 	size_t Resize(size_t mx)
 	{
 		if(mx>0) {
-			MemReAlloc(mx);
+			this->MemReAlloc(mx);
 			m_Size   = mx;
 		}
 		return m_Size;
 	};
 
-	void Set(int i,T v)
-    {
+	void Set(size_t i,T v)
+    	{
 	   if( i<0 || i>=m_Size) throw new CException(-1,"Index out of range,TArray.Set()");
-	   Address()[i] = v;
-    };
+	   this->Address()[i] = v;
+    	};
 
-	T Get(int i)
+	T Get(size_t i)
 	{
 		if(i<0 || i>=m_Size) throw new CException(-1,"Index out of range,TArray.Get()");
-		return Address()[i];
+		return this->Address()[i];
 	};
 
 	void Clear(T v)  {
-		for(int i=0;i<m_Size;++i) Address()[i]=v;
+		for(size_t i=0;i<m_Size;++i) this->Address()[i]=v;
 	};
-	int  Size()  {return m_Size;};
-	T   *Array() {return Address();};
+	size_t  Size()  {return m_Size;};
+	T   *Array() {return this->Address();};
 
 private:
-	int  m_Size;
+	size_t  m_Size;
 };
 
 template <typename T>
 class TStack: public TArray <T> {
 
 public:
-	TStack(int mx,int incr):TArray(mx)
+	TStack(size_t mx,size_t incr):TStack::TArray(mx)
 	{
 		m_iCount = 0;
 		if(incr>0) m_nIncr   = incr;
 		else       m_nIncr   = 10;
 	};
 
-	TStack(int mx):TArray(mx)
+	TStack(size_t mx):TStack::TArray(mx)
 	{
 		m_iCount    = 0;
 		m_nIncr     = mx/100 + 10;
 	};
 
-	TStack():TArray(10)
+	TStack():TStack::TArray(10)
 	{
 		m_iCount    = 0;
 		m_nIncr     = 10;
@@ -161,15 +162,15 @@ public:
 	T * Top()
 	{
 		if(m_iCount<=0) return NULL;
-		return &((Array()[m_iCount-1]));
+		return &((this->Array()[m_iCount-1]));
 	}
 
-	int Push(T v)
+	size_t Push(T v)
 	{
-		if(m_iCount>=Size()) {
-			Resize(Size() + (Size()*m_nIncr)/100 + 1);
+		if(m_iCount>=this->Size()) {
+			this->Resize(this->Size() + (this->Size()*m_nIncr)/100 + 1);
 		}
-		Set(m_iCount++,v);
+		this->Set(m_iCount++,v);
 		return m_iCount;
 	};
 
@@ -178,15 +179,15 @@ public:
 		if(m_iCount<=0)  {
 			throw new CException(-1,"Pop(): underflow");
 		}
-		return Get(--m_iCount);
+		return this->Get(--m_iCount);
 	};
 
-	int    Count()     {return m_iCount;};
-	int    Increment() {return m_nIncr;};
+	size_t    Count()     {return m_iCount;};
+	size_t    Increment() {return m_nIncr;};
 
 private:
-	int         m_nIncr   ;  // Increment % size of the array when it is extended.
-	int         m_iCount;
+	size_t         m_nIncr   ;  // Increment % size of the array when it is extended.
+	size_t         m_iCount;
 };
 
 #endif

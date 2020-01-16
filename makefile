@@ -4,7 +4,7 @@ HEADERS=stdafx.h debug.h dtbx.h stdafx.h templates.h
 OBJS=dtbx.o block3.o debug.o lusolver.o sort.o
 
 lib:
-	g++ -o dtbx.so -shared -fPIC -fvisibility=hidden -D _DEBUG $(DLL_SOURCES)
+	g++ -o libdtbx.so -shared -fPIC -fvisibility=hidden -D _DEBUG $(DLL_SOURCES)
 link:
 	gcc -L./ -o test test.c -ldtbx
 run:

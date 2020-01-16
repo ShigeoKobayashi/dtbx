@@ -8,7 +8,7 @@
 #include "stdafx.h"
 
 #ifdef _DEBUG
-void AssertProc(int f,char *file,int line)
+void AssertProc(int f,const char *file,int line)
 {
 	if(f) return;
 	printf("** Assertion failed %s:%d **\n",file,line);

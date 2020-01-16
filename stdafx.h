@@ -27,6 +27,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 #include "templates.h"
 #include "debug.h"
 #include "memory.h"

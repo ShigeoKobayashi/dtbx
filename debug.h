@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 #ifdef _DEBUG
-extern void AssertProc(int f,char *file,int line);
+extern void AssertProc(int f,const char *file,int line);
 #define ASSERT(f) AssertProc(f,__FILE__,__LINE__)
 #define TRACE(s)  {printf("\n--%s:%d[",__FILE__,__LINE__);printf s;printf("]\n");}
 #else
