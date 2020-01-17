@@ -44,7 +44,7 @@ blockquote { margin-left: 15px;margin-top: 1px;}
 <div align="right">
 This software can be redistributed under <a href="https://www.gnu.org/licenses/lgpl-3.0.en.html" target="_new">GNU Lesser General Public License</a>.<br/>
 <a href="https://github.com/ShigeoKobayashi/dtbx/" target="_new">Every source code of this software can be obtained through GitHub</a><br/>
-Copylight (c) 2018 Shigeo Kobayashi. All rights reserved.
+Copylight (c) 2019 Shigeo Kobayashi. All rights reserved.
 </div>
 <hr/>
 Digital Toolbox (C/C++ API library) offers some useful functions(as of 2019) such as:
@@ -66,11 +66,11 @@ To build this software,include "dtbx.h" in your program and
 Matrix block triangular decomposition is sometimes useful to solve linear equation system such as <br/>
 <pre>    Ax=y </pre>,where A is a square matrix,x and y are solution and constant vector respectively.<br/>
 <b>The following explanation is also applicable to 
-decompose a large non-linear equation system</b> to a sequence of smaller sized non-linear equation systems,if A is a Jacobian matrix of non-linear eqation system,<br/>
+decompose a large non-linear equation system</b> to a sequence of smaller sized non-linear equation systems.<br/>
+In this case,A can be a Jacobian matrix of non-linear eqation system.<p/>
 
-It is sometimes possible to decompose A into a sequence of smaller sized sub-matrices as <br/>
-<pre>    Ax=y  ===&gt;  A<sub>i</sub>x<sub>i</sub>=y<sub>i</sub> i=0,1,2...</pre>
-where A<sub>i</sub> and x<sub>i</sub> are subset of A and x respectively, but y<sub>i</sub> is not a subset of y but derived from y,A and x.<br/>
+It is sometimes possible to decompose A into a sequence of smaller sized sub-matrices as <pre>    Ax=y  ===&gt;  A<sub>i</sub>x<sub>i</sub>=y<sub>i</sub> i=0,1,2...</pre>
+where A<sub>i</sub> and x<sub>i</sub> are subset of A and x respectively. But y<sub>i</sub> is not a subset of y that can be derived from y,A and x.<br/>
 For example,the left matrix A(and x,y) shown bellow can be rearranged to the right one by exchanging 
 some columns and rows.<br/>
 (1 means the element of any non-zero value.)
@@ -79,7 +79,7 @@ some columns and rows.<br/>
      1 0 0 0 0 1 1 1  x<sub>1</sub> y<sub>1</sub>         A<sub>0</sub> 1 1 0 0 0 0 0 0  x<sub>3</sub> y<sub>5</sub>
      0 0 0 0 0 1 0 1  x<sub>2</sub> y<sub>2</sub>         A<sub>1</sub> 0 0 1 1 1 0 0 0  x<sub>7</sub> y<sub>4</sub>
      0 0 0 1 1 0 0 0  x<sub>3</sub> y<sub>3</sub>         A<sub>1</sub> 0 0 1 1 1 0 0 0  x<sub>2</sub> y<sub>6</sub>
- <b>A</b>   0 1 1 0 0 0 0 1  x<sub>4</sub> y<sub>4</sub>   ==&gt;   A<sub>1</sub> 0 0 1 1 1 0 0 0  x<sub>1</sub> y<sub>7</sub>
+  <b>A</b>  0 1 1 0 0 0 0 1  x<sub>4</sub> y<sub>4</sub>   ==&gt;   A<sub>1</sub> 0 0 1 1 1 0 0 0  x<sub>1</sub> y<sub>7</sub>
      0 0 0 1 1 0 0 0  x<sub>5</sub> y<sub>5</sub>         A<sub>2</sub> 0 0 1 0 0 1 0 0  x<sub>5</sub> y<sub>2</sub>
      0 1 1 0 0 0 0 1  x<sub>6</sub> y<sub>6</sub>         A<sub>3</sub> 0 1 1 0 0 0 1 1  x<sub>6</sub> y<sub>0</sub>
      0 1 1 0 0 0 0 1  x<sub>7</sub> y<sub>7</sub>         A<sub>3</sub> 0 0 1 0 0 1 1 1  x<sub>0</sub> y<sub>1</sub>
@@ -89,25 +89,25 @@ Seeing the right 8x8 matrix,it is obvious that Ax=y can be divided into 4 subset
 Where the size of A<sub>0</sub> is 2x2,A<sub>1</sub> is 3x3,A<sub>2</sub> is 1x1,and A<sub>3</sub> is 2x2.<br/>
 
 <br/>
-Ignoring the actual element value of A, y can be represented as y<sub>i</sub>=f<sub>i</sub>(x<sub>j</sub>,x<sub>k</sub>,x<sub>l</sub>,...</sub>). in general form.<br/>
+Ignoring the actual form of A, y can be represented as y<sub>i</sub>=f<sub>i</sub>(x<sub>j</sub>,x<sub>k</sub>,x<sub>l</sub>,...</sub>). in general form.<br/>
 For instance y<sub>0</sub>=f<sub>0</sub>(x<sub>0</sub>,x<sub>3</sub>,x<sub>6</sub>,x<sub>7</sub>),in above example(see row<sub>0</sub> of the left matrix).<br/>
 In graphically,edges(arrows) starting from nodes x<sub>0</sub>,x<sub>3</sub>,x<sub>6</sub>,and x<sub>7</sub> end to y<sub>0</sub>.<p/>
 The steps to decompose A are:
 <ol>
 <li><a href="#pairing">
 Make 1 to 1 correspondings between y and x(pairing)</a>. This is the same as to set all diagonal elements of A be non-zero by exchanging some rows and columns. </li>
-<li><a href="#divide">Add reverse arrow from each y to paired x</a>. This creates loops. The total number of the loops is the size of A.</li>
-<li><a href="#divide">Merge loops in the same order to larger loops</a>.</li>
+<li><a href="#divide">Add reverse arrow from each y to paired x</a>. This creates small loops(total number of the loops is the size of A).</li>
+<li><a href="#divide">Merge loops in the same order to larger loops</a>. Resulting <b>loops</b> construct equation systems.</li>
 </ol>
-Y's and x's in the same loop construct 1 equation system solved. The order of loops are the order of computing equation systems.
+Y's and x's in the same loop construct 1 equation system solved. <br/>
+The order of loops are the computation order of equation systems resulted.
 
 
 <a name="#div"></a>
 <h3>int	DtxDivideMatrix(int n,void *A,int y[],int x[],int sizes[],int (*IsNonZeroElement)(void *A,int I,int J,int n))
 </h3>
  <b>DtxDivideMatrix()</b> divides the matrix given(=A) into a sequence of smaller sized matrices.<br/>
-Because the element value of the given matrix is zero or non-zero is the only information needed,this function is not interested in the type of matrix(and it's element type),
-the user must provide the function IsNonZeroElement() which tells the specified element A[I,J] is zero or non-zero.<br/>
+Because the element value of the given matrix is zero or non-zero is the only information needed,this function is not interested in the type of matrix(and it's element type),the user must provide the function IsNonZeroElement() which tells the specified element A[I,J] is zero or non-zero.<br/>
 The resulting divided submatrices can be obtained by y[],x[],and sizes[].
 <p/><pre>
   n      ... [IN]  The size of the (square)matrix divided.
@@ -134,6 +134,7 @@ The resulting divided submatrices can be obtained by y[],x[],and sizes[].
          ... totoal number of sub-matrices when A is successfully divided.
   other  ... A is not divided (A is a singular matrix).
  </pre><p/>
+This DtxDivideMatrix() internally calls <a href="#pairing">DtxSelectPair()</a> and <a href="#divide">DtxDividePairedMatrix()</a><br/>
 The usage of DtxDivideMatrix() can be found in the source codes of <a href="#leq">DtxLeqDivSolve()</a>.
 
 <a name="#pairing"></a>
