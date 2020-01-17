@@ -9,6 +9,12 @@
  *
  * Copyright(C) 2018 by Shigeo Kobayashi(shigeo@tinyforest.jp)
  *
+ *   Note: g++ requires to set '::' and 'this->' like following examples
+ *         which MS-C++ does not!
+ *
+ *       	TArray(size_t mx) : TArray::TMemory(mx)
+ *	        T& operator [](int i) { return this->Address()[i]; };
+ *
  */
 
 #ifndef __INC_TEMPLATE_H__
