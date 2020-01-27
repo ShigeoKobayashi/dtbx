@@ -6,13 +6,14 @@
  *    memory allocation (TMemory),
  *    array handling (TArray),and 
  *    stack operation (TStack).
+ *    queue operation (TQueue)
  *
  * Copyright(C) 2018 by Shigeo Kobayashi(shigeo@tinyforest.jp)
  *
  *   Note: g++ requires to set '::' and 'this->' like following examples
  *         which MS-C++ does not!
  *
- *       	TArray(size_t mx) : TArray::TMemory(mx)
+ *       	TArray(int mx) : TArray::TMemory(mx)
  *	        T& operator [](int i) { return this->Address()[i]; };
  *
  */
@@ -25,12 +26,14 @@
 #include <memory.h>
 #include "debug.h"
 
+//
+// Memory management
 template <typename T> 
 class TMemory 
 {
 
 public:
-	TMemory(size_t mx)
+	TMemory(int mx)
 	{
 		m_bytes   = 0;
 		m_pmemory = NULL;
@@ -44,7 +47,7 @@ public:
 		MemFree();
 	};
 
-	T *MemAlloc(size_t s)
+	T *MemAlloc(int s)
 	{
 		if(m_pmemory!=NULL) {
 			throw new CException(ERROR_MEMORY_ALLOC,"MemAlloc(),already allocated.");
@@ -59,7 +62,7 @@ public:
 		return m_pmemory;
 	};
 
-	T *MemReAlloc(size_t s)
+	T *MemReAlloc(int s)
 	{
 		if(m_pmemory==NULL) {
 			throw new CException(ERROR_MEMORY_ALLOC,"MemReAlloc(),not yet allocated allocated.");
@@ -83,19 +86,21 @@ public:
 	};
 
 	T     *Address() {return m_pmemory;};
-	size_t ByteSize(){return m_bytes;}; 
+	int ByteSize(){return m_bytes;}; 
 
 private:
-	size_t m_bytes;
+	int m_bytes;
 	T   *m_pmemory;
 };
 
+//
+// Array handling
 template <typename T> 
-class TArray: public TMemory <T>
+class TArray: private TMemory <T>
 {
 
 public:
-	TArray(size_t mx) : TArray::TMemory(mx)
+	TArray(int mx) : TArray::TMemory(mx)
 	{
 		m_Size   = mx;
 	};
@@ -107,7 +112,7 @@ public:
 
 	T& operator [](int i) { return this->Address()[i]; };
 
-	size_t Resize(size_t mx)
+	int Resize(int mx)
 	{
 		if(mx>0) {
 			this->MemReAlloc(mx);
@@ -116,50 +121,54 @@ public:
 		return m_Size;
 	};
 
-	void Set(size_t i,T v)
+	void Set(int i,T v)
     	{
 	   if( i<0 || i>=m_Size) throw new CException(-1,"Index out of range,TArray.Set()");
 	   this->Address()[i] = v;
     	};
 
-	T Get(size_t i)
+	T Get(int i)
 	{
 		if(i<0 || i>=m_Size) throw new CException(-1,"Index out of range,TArray.Get()");
 		return this->Address()[i];
 	};
 
 	void Clear(T v)  {
-		for(size_t i=0;i<m_Size;++i) this->Address()[i]=v;
+		for(int i=0;i<m_Size;++i) this->Address()[i]=v;
 	};
-	size_t  Size()  {return m_Size;};
+	int  Size()  {return m_Size;};
 	T   *Array() {return this->Address();};
 
 private:
-	size_t  m_Size;
+	int  m_Size;
 };
 
+//
+// Stack operation
 template <typename T>
 class TStack: public TArray <T> {
 
 public:
-	TStack(size_t mx,size_t incr):TStack::TArray(mx)
+	TStack(int mx,int incr):TStack::TArray(mx)
 	{
 		m_iCount = 0;
 		if(incr>0) m_nIncr   = incr;
 		else       m_nIncr   = 10;
 	};
 
-	TStack(size_t mx):TStack::TArray(mx)
+	TStack(int mx):TStack::TArray(mx)
 	{
 		m_iCount    = 0;
 		m_nIncr     = mx/100 + 10;
 	};
 
+	/*
 	TStack():TStack::TArray(10)
 	{
 		m_iCount    = 0;
 		m_nIncr     = 10;
 	};
+	*/
 
 	~TStack()
 	{
@@ -171,7 +180,7 @@ public:
 		return &((this->Array()[m_iCount-1]));
 	}
 
-	size_t Push(T v)
+	int Push(T v)
 	{
 		if(m_iCount>=this->Size()) {
 			this->Resize(this->Size() + (this->Size()*m_nIncr)/100 + 1);
@@ -188,12 +197,264 @@ public:
 		return this->Get(--m_iCount);
 	};
 
-	size_t    Count()     {return m_iCount;};
-	size_t    Increment() {return m_nIncr;};
+	int    Count()     {return m_iCount;};
+	int    Increment() {return m_nIncr;};
 
 private:
-	size_t         m_nIncr   ;  // Increment % size of the array when it is extended.
-	size_t         m_iCount;
+	int         m_nIncr   ;  // Increment % size of the array when it is extended.
+	int         m_iCount;
+};
+
+
+//
+// Queue operation
+//
+template <class T>
+struct TNode {
+	T      Value;
+	TNode *pLeft;
+	TNode *pRight;
+	int    Index;
+};
+
+template <class T>
+class TQueue: private TStack< TNode<T> > {
+
+public:
+	// mx: initial queue slot size.
+	TQueue(int mx):TQueue::TStack<TNode<T>>(mx)
+	{
+		m_pRightMost = (TNode<T>*)NULL;
+		m_pLeftMost  = (TNode<T>*)NULL;
+		m_pDeleted   = (TNode<T>*)NULL;
+	};
+
+   ~TQueue()
+	{
+	};
+
+	// returns the right most node in queue.
+    TNode<T> *Right()
+	{
+		return this->m_pRightMost;
+	};
+
+	// returns the left most node in queue.
+    TNode<T> *Left()
+	{
+		return this->m_pLeftMost;
+	};
+
+	// returns the right node of pNow in queue.
+	// If pNow==NULL,then the right most node is retured.
+	TNode<T> *Right(TNode<T> *pNow)
+	{
+		if(pNow==(TNode<T>*)NULL) return this->m_pLeftMost;
+		return pNow->pRight;
+	};
+
+	// returns the left node of pNow in queue.
+	// If pNow==NULL,then the left most node is retured.
+	TNode<T> *Left (TNode<T> *pNow)
+	{
+		if(pNow==(TNode<T>*)NULL) return this->m_pRightMost;
+		return pNow->pLeft;
+	};
+
+	//
+	// Search v from pFrom to right direction.
+	// If pFrom==NULL,then searching begins from the left most position.
+	// Note '==' operator must be defined.
+	//
+	TNode<T> *SearchRight(T v,TNode<T> *pFrom)
+	{
+		TNode<T> *pNow = pFrom;
+		if(pNow==(TNode<T> *)NULL) pNow = this->m_pLeftMost;
+		while(pNow!=NULL) {
+			if(v==pNow->Value) return pNow;
+			pNow = pNow->pRight;
+		}
+		return (TNode<T>*)NULL;
+	};
+
+	//
+	// Search v from pFrom to left direction.
+	// If pFrom==NULL,then searching begins from the right most position.
+	// Note '==' operator must be defined.
+	//
+	TNode<T> *SearchLeft(T v,TNode<T> *pFrom)
+	{
+		TNode<T> *pNow = pFrom;
+		if(pNow==(TNode<T> *)NULL) pNow = this->m_pRightMost;
+		while(pNow!=NULL) {
+			if(v==pNow->Value) return pNow;
+			pNow = pNow->pLeft;
+		}
+		return (TNode<T>*)NULL;
+	};
+
+	//
+	// Pop the left most value.
+	T PopLeft()
+	{
+		TNode<T> *pNode = this->m_pLeftMost; 
+		if(pNode==(TNode<T>*)NULL) throw new CException(-3,"ERROR[PopLeft()]: No node in the queue.");
+		this->m_pLeftMost = pNode->pRight;
+		AddRemoveList(pNode);
+		return pNode->Value;
+	}
+
+	//
+	// Pop the right most value.
+	T PopRight()
+	{
+		TNode<T> *pNode = this->m_pRightMost; 
+		if(pNode==(TNode<T>*)NULL) throw new CException(-3,"ERROR[PopLeft()]: No node in the queue.");
+		this->m_pRightMost = pNode->pLeft;
+		AddRemoveList(pNode);
+		return pNode->Value;
+	}
+
+	// 
+	// Remove the specified node by it's index in the queue list.
+	// ix is obtained by (TNode<T>).Index.
+	void RemoveNode(int ix)
+	{
+		TNode<T> *pNode = (TNode<T>*)NULL; 
+		if(this->m_pLeftMost==(TNode<T>*)NULL)    throw new CException(-2,"ERROR[RemoveNode()]: Specified node not in the queue.");
+		if(ix<0 || ix>=this->TStack::Count()) throw new CException(-2,"ERROR[RemoveNode()]: Specified node not in the queue.");
+		pNode = this->TStack::Array()+ix;
+		// chech if the node is already deleted.
+		if(pNode->pRight==(TNode<T>*)(-1)) throw new CException(-2,"ERROR[RemoveNode()]: Specified node not in the queue.");
+		
+		if(pNode==this->m_pLeftMost)  {PopLeft();  return;}
+		if(pNode==this->m_pRightMost) {PopRight(); return;}
+
+		// reset list pointers
+		(pNode->pLeft)->pRight = pNode->pRight;
+		(pNode->pRight)->pLeft = pNode->pLeft;
+
+		this->AddRemoveList((TNode<T>*)pNode);
+	}
+
+	//
+	// Push v to left side of the queue.
+	TNode<T> *PushLeft(T v)
+	{
+		TNode<T> *pNode = this->GetNode(v);
+
+		// Setup linked list
+		if(this->m_pLeftMost==(TNode<T>*)NULL) {
+			ASSERT(this->m_pRightMost==(TNode<T>*)NULL);
+			pNode->pLeft   = (TNode<T>*)NULL;
+			pNode->pRight  = (TNode<T>*)NULL;
+			this->m_pLeftMost  = pNode;
+			this->m_pRightMost = pNode;
+		} else {
+			ASSERT(this->m_pRightMost!=(TNode<T>*)NULL);
+			ASSERT(this->m_pLeftMost->pLeft==(TNode<T>*)NULL);
+			this->m_pLeftMost->pLeft = pNode;
+			pNode->pLeft   = (TNode<T>*)NULL;
+			pNode->pRight  = this->m_pLeftMost;
+			this->m_pLeftMost        = pNode;
+		}
+		return pNode;
+	};
+
+	//
+	// Push v to right side of the queue.
+	TNode<T> *PushRight(T v)
+	{
+		TNode<T> *pNode = this->GetNode(v);
+
+		// Setup linked list
+		if(m_pRightMost==(TNode<T>*)NULL) {
+			ASSERT(m_pLeftMost==(TNode<T>*)NULL);
+			pNode->pLeft  = (TNode<T>*)NULL;
+			pNode->pRight = (TNode<T>*)NULL;
+			m_pLeftMost       = pNode;
+			m_pRightMost      = pNode;
+		} else {
+			ASSERT(m_pLeftMost!=(TNode<T>*)NULL);
+			ASSERT(m_pRightMost->pRight==(TNode<T>*)NULL);
+			m_pRightMost->pRight = pNode;
+			pNode->pRight    = (TNode<T>*)NULL;
+			pNode->pLeft     = m_pRightMost;
+			m_pRightMost         = pNode;
+		}
+		return pNode;
+	};
+
+	TNode<T> *InsertLeft(int ix,T v)
+	{
+		TNode<T> *pNode = (TNode<T>*)NULL; 
+		if(this->m_pLeftMost==(TNode<T>*)NULL)    throw new CException(-2,"ERROR[InsertLeft()]: Specified node not in the queue.");
+		if(ix<0 || ix>=this->TStack::Count()) throw new CException(-2,"ERROR[InsertLeft()]: Specified node not in the queue.");
+		pNode = this->TStack::Array()+ix;
+		// chech if the node is already deleted.
+		if(pNode->pRight==(TNode<T>*)(-1)) throw new CException(-2,"ERROR[InsertLeft()]: Specified node not in the queue.");
+		
+		if(pNode==this->m_pLeftMost)  return PushLeft(v);
+		TNode<T> * pNew = this->GetNode(v);
+		pNew->pRight = pNode;
+		pNew->pLeft  = pNode->pLeft;
+		(pNode->pLeft)->pRight = pNew;
+		pNode->pLeft           = pNew;
+		return pNew;
+	};
+
+	TNode<T> *InsertRight(int ix,T v)
+	{
+		TNode<T> *pNode = (TNode<T>*)NULL; 
+		if(this->m_pRightMost==(TNode<T>*)NULL)   throw new CException(-2,"ERROR[InsertRight()]: Specified node not in the queue.");
+		if(ix<0 || ix>=this->TStack::Count()) throw new CException(-2,"ERROR[InsertRight()]: Specified node not in the queue.");
+		pNode = this->TStack::Array()+ix;
+		// chech if the node is already deleted.
+		if(pNode->pRight==(TNode<T>*)(-1)) throw new CException(-2,"ERROR[InsertRight()]: Specified node not in the queue.");
+		
+		if(pNode==this->m_pRightMost)  return PushRight(v);
+		TNode<T> * pNew = this->GetNode(v);
+		pNew->pLeft  = pNode;
+		pNew->pRight = pNode->pRight;
+		(pNode->pRight)->pLeft = pNew;
+		pNode->pRight          = pNew;
+		return pNew;
+	};
+
+private:
+	TNode<T> *GetNode(T v)
+	{
+		TNode<T> *pNode = (TNode<T>*)NULL; 
+		// Get available node 
+		if(this->m_pDeleted==(TNode<T>*)NULL) {
+			TNode<T> node;
+			int      ix;
+			node.Value  = v;
+			ix = this->TStack::Push(node) - 1;
+			pNode = this->TStack::Array()+ix;
+			pNode->Index = ix;
+		} else {
+			ASSERT(this->m_pDeleted->pRight==(TNode<T>*)(-1));
+			pNode = this->m_pDeleted;
+			m_pDeleted = m_pDeleted->pLeft;
+			pNode->Value = v;
+		}
+		return pNode;
+	};
+
+	void AddRemoveList(TNode<T>* pNode)
+	{
+		// Set removed flag.
+		pNode->pRight = (TNode<T>*)(-1);
+		// Add to deleted list.
+		pNode->pLeft = this->m_pDeleted;
+		this->m_pDeleted = pNode;
+	};
+
+private:
+	TNode<T> *m_pLeftMost;
+	TNode<T> *m_pRightMost;
+	TNode<T> *m_pDeleted;
 };
 
 #endif

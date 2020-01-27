@@ -60,6 +60,10 @@ __stdcall __cdecl and C#
 extern "C" {
 #endif
 
+#ifdef _DEBUG
+DTX_EXPORT(void) DtxDebug();
+#endif
+
 /* in sort.cpp */
 /*
    Last 2 arguments ,compare and swap, perform actual sort operations(compares elements and exchanges(swaps) elements of a respectively.
