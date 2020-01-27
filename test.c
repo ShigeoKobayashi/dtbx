@@ -12,7 +12,7 @@
 
 #include "dtbx.h"
 
-int main(int argc, char* argv[])
+void MatrixTest()
 {
 #define n 8
 	int e,i,j;
@@ -96,5 +96,12 @@ int main(int argc, char* argv[])
 		}
 		printf(" %lf",b[i]-s);
 	}
-	return 0;
 }
+
+ 
+ int main(int argc, char* argv[])
+ {
+//	MatrixTest();
+	DtxDebug();
+	return 0;
+ }
