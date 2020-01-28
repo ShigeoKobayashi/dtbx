@@ -209,10 +209,13 @@ private:
 //
 // Queue operation
 //
-template <typename T>
+template <class T> class TQueue;
+
+template <class T>
 class TNode {
 
-	template <typename T> friend class TQueue;
+	// template <class T>
+	friend class TQueue<T>;
 
 public:
 	TNode(T v)
@@ -233,7 +236,7 @@ private:
 	TNode<T> *pRight;
 };
 
-template <typename T>
+template <class T>
 class TQueue
 //	: private TStack< TNode<T> >  <== MS-VC compiles this of course,but g++ never !!!!
 {
