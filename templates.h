@@ -446,7 +446,7 @@ public:
 private:
 	void CheckNode(TNode<T> *pNode)
 	{
-		if(pNode==(TNode<T>*)NULL || pNode->pLeft==(TNode<T>*)(-1))
+		if(pNode==(TNode<T>*)NULL || pNode->pLeft==(TNode<T>*)(-1) || pNode->pRight==(TNode<T>*)(-1))
 			throw new CException(-2,"ERROR[CheckNode()]: Invalid node.");
 	};
 
