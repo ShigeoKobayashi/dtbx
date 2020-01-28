@@ -26,8 +26,11 @@ DEBUG_EXPORT(void)
 	Q.PushLeft(2);
 	t = Q.PushLeft(3);
 	TNode<int>* p = Q.PushLeft(4);
-	Q.RemoveNode(t->Index);
-	Q.InsertRight(p->Index,3);
+	Q.RemoveNode(t);
+	Q.InsertRight(p,3);
+	TNode<int> *n5 = Q.PushRight(5);
+	int i = Q.PopRight();
+	i = Q.PopLeft();
 	p = Q.SearchLeft(3,(TNode<int>*)NULL);
 
 	t = NULL;
@@ -35,6 +38,14 @@ DEBUG_EXPORT(void)
 	{
 		printf(" %d ",t->Value);
 	}
+
+	printf("\n");
+	t = NULL;
+	while(t = Q.Left(t))
+	{
+		printf(" %d ",t->Value);
+	}
+
 }
 
 

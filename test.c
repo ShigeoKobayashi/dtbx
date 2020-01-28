@@ -101,7 +101,7 @@ void MatrixTest()
  
  int main(int argc, char* argv[])
  {
-//	MatrixTest();
+	MatrixTest();
 	DtxDebug();
 	return 0;
  }

@@ -209,20 +209,38 @@ private:
 //
 // Queue operation
 //
-template <class T>
-struct TNode {
-	T      Value;
-	TNode *pLeft;
-	TNode *pRight;
-	int    Index;
+template <typename T>
+class TNode {
+
+	template <typename T> friend class TQueue;
+
+public:
+	TNode(T v)
+	{
+		this->Value = v;
+		pLeft  = (TNode<T> *)(-1);
+		pRight = (TNode<T> *)(-1);
+	};
+
+	TNode<T> *Left()  {return this->pLeft;};
+	TNode<T> *Right() {return this->pRight;};
+
+public:
+	T         Value;
+
+private:
+	TNode<T> *pLeft;
+	TNode<T> *pRight;
 };
 
-template <class T>
-class TQueue: private TStack< TNode<T> > {
+template <typename T>
+class TQueue
+//	: private TStack< TNode<T> >  <== MS-VC compiles this of course,but g++ never !!!!
+{
 
 public:
 	// mx: initial queue slot size.
-	TQueue(int mx):TQueue::TStack<TNode<T>>(mx)
+	TQueue(int mx)   //		:TQueue::TStack<TNode<T>>(mx) g++ never arrow this !!! gave up...
 	{
 		m_pRightMost = (TNode<T>*)NULL;
 		m_pLeftMost  = (TNode<T>*)NULL;
@@ -231,6 +249,19 @@ public:
 
    ~TQueue()
 	{
+		TNode<T>* pNext;
+		TNode<T>* pNode = m_pDeleted;
+		while(pNode!=(TNode<T>*)NULL) {
+			pNext = pNode->pLeft;
+			delete pNode;
+			pNode = pNext;
+		}
+		pNode = m_pLeftMost;
+		while(pNode!=(TNode<T>*)NULL) {
+			pNext = pNode->pLeft;
+			delete pNode;
+			pNode = pNext;
+		}
 	};
 
 	// returns the right most node in queue.
@@ -270,6 +301,7 @@ public:
 	{
 		TNode<T> *pNow = pFrom;
 		if(pNow==(TNode<T> *)NULL) pNow = this->m_pLeftMost;
+		this->CheckNode(pNow);
 		while(pNow!=NULL) {
 			if(v==pNow->Value) return pNow;
 			pNow = pNow->pRight;
@@ -286,6 +318,7 @@ public:
 	{
 		TNode<T> *pNow = pFrom;
 		if(pNow==(TNode<T> *)NULL) pNow = this->m_pRightMost;
+		this->CheckNode(pNow);
 		while(pNow!=NULL) {
 			if(v==pNow->Value) return pNow;
 			pNow = pNow->pLeft;
@@ -300,7 +333,8 @@ public:
 		TNode<T> *pNode = this->m_pLeftMost; 
 		if(pNode==(TNode<T>*)NULL) throw new CException(-3,"ERROR[PopLeft()]: No node in the queue.");
 		this->m_pLeftMost = pNode->pRight;
-		AddRemoveList(pNode);
+		if(pNode->pRight!=(TNode<T>*)NULL) (pNode->pRight)->pLeft = (TNode<T>*)NULL;
+		this->AddRemoveList(pNode);
 		return pNode->Value;
 	}
 
@@ -311,24 +345,20 @@ public:
 		TNode<T> *pNode = this->m_pRightMost; 
 		if(pNode==(TNode<T>*)NULL) throw new CException(-3,"ERROR[PopLeft()]: No node in the queue.");
 		this->m_pRightMost = pNode->pLeft;
-		AddRemoveList(pNode);
+		if(pNode->pLeft!=(TNode<T>*)NULL) (pNode->pLeft)->pRight = (TNode<T>*)NULL;
+		this->AddRemoveList(pNode);
 		return pNode->Value;
 	}
 
 	// 
 	// Remove the specified node by it's index in the queue list.
 	// ix is obtained by (TNode<T>).Index.
-	void RemoveNode(int ix)
+	void RemoveNode(TNode<T> *pNode)
 	{
-		TNode<T> *pNode = (TNode<T>*)NULL; 
-		if(this->m_pLeftMost==(TNode<T>*)NULL)    throw new CException(-2,"ERROR[RemoveNode()]: Specified node not in the queue.");
-		if(ix<0 || ix>=this->TStack::Count()) throw new CException(-2,"ERROR[RemoveNode()]: Specified node not in the queue.");
-		pNode = this->TStack::Array()+ix;
-		// chech if the node is already deleted.
-		if(pNode->pRight==(TNode<T>*)(-1)) throw new CException(-2,"ERROR[RemoveNode()]: Specified node not in the queue.");
-		
-		if(pNode==this->m_pLeftMost)  {PopLeft();  return;}
-		if(pNode==this->m_pRightMost) {PopRight(); return;}
+		if(this->m_pLeftMost==(TNode<T>*)NULL)  throw new CException(-2,"ERROR[RemoveNode()]: Specified node not in the queue.");
+		this->CheckNode(pNode);
+		if(pNode==this->m_pLeftMost)  {this->PopLeft();  return;}
+		if(pNode==this->m_pRightMost) {this->PopRight(); return;}
 
 		// reset list pointers
 		(pNode->pLeft)->pRight = pNode->pRight;
@@ -366,7 +396,6 @@ public:
 	TNode<T> *PushRight(T v)
 	{
 		TNode<T> *pNode = this->GetNode(v);
-
 		// Setup linked list
 		if(m_pRightMost==(TNode<T>*)NULL) {
 			ASSERT(m_pLeftMost==(TNode<T>*)NULL);
@@ -380,21 +409,16 @@ public:
 			m_pRightMost->pRight = pNode;
 			pNode->pRight    = (TNode<T>*)NULL;
 			pNode->pLeft     = m_pRightMost;
-			m_pRightMost         = pNode;
+			m_pRightMost     = pNode;
 		}
 		return pNode;
 	};
 
-	TNode<T> *InsertLeft(int ix,T v)
+	TNode<T> *InsertLeft(TNode<T> *pNode,T v)
 	{
-		TNode<T> *pNode = (TNode<T>*)NULL; 
-		if(this->m_pLeftMost==(TNode<T>*)NULL)    throw new CException(-2,"ERROR[InsertLeft()]: Specified node not in the queue.");
-		if(ix<0 || ix>=this->TStack::Count()) throw new CException(-2,"ERROR[InsertLeft()]: Specified node not in the queue.");
-		pNode = this->TStack::Array()+ix;
-		// chech if the node is already deleted.
-		if(pNode->pRight==(TNode<T>*)(-1)) throw new CException(-2,"ERROR[InsertLeft()]: Specified node not in the queue.");
-		
-		if(pNode==this->m_pLeftMost)  return PushLeft(v);
+		if(this->m_pLeftMost==(TNode<T>*)NULL) throw new CException(-2,"ERROR[InsertLeft()]: Specified node not in the queue.");
+		this->CheckNode(pNode);
+		if(pNode==this->m_pLeftMost)  return this->PushLeft(v);
 		TNode<T> * pNew = this->GetNode(v);
 		pNew->pRight = pNode;
 		pNew->pLeft  = pNode->pLeft;
@@ -403,16 +427,11 @@ public:
 		return pNew;
 	};
 
-	TNode<T> *InsertRight(int ix,T v)
+	TNode<T> *InsertRight(TNode<T> *pNode,T v)
 	{
-		TNode<T> *pNode = (TNode<T>*)NULL; 
-		if(this->m_pRightMost==(TNode<T>*)NULL)   throw new CException(-2,"ERROR[InsertRight()]: Specified node not in the queue.");
-		if(ix<0 || ix>=this->TStack::Count()) throw new CException(-2,"ERROR[InsertRight()]: Specified node not in the queue.");
-		pNode = this->TStack::Array()+ix;
-		// chech if the node is already deleted.
-		if(pNode->pRight==(TNode<T>*)(-1)) throw new CException(-2,"ERROR[InsertRight()]: Specified node not in the queue.");
-		
-		if(pNode==this->m_pRightMost)  return PushRight(v);
+		if(this->m_pRightMost==(TNode<T>*)NULL) throw new CException(-2,"ERROR[InsertRight()]: Specified node not in the queue.");
+		this->CheckNode(pNode);
+		if(pNode==this->m_pRightMost)  return this->PushRight(v);
 		TNode<T> * pNew = this->GetNode(v);
 		pNew->pLeft  = pNode;
 		pNew->pRight = pNode->pRight;
@@ -422,23 +441,26 @@ public:
 	};
 
 private:
+	void CheckNode(TNode<T> *pNode)
+	{
+		if(pNode==(TNode<T>*)NULL || pNode->pLeft==(TNode<T>*)(-1))
+			throw new CException(-2,"ERROR[CheckNode()]: Invalid node.");
+	};
+
 	TNode<T> *GetNode(T v)
 	{
 		TNode<T> *pNode = (TNode<T>*)NULL; 
 		// Get available node 
 		if(this->m_pDeleted==(TNode<T>*)NULL) {
-			TNode<T> node;
-			int      ix;
-			node.Value  = v;
-			ix = this->TStack::Push(node) - 1;
-			pNode = this->TStack::Array()+ix;
-			pNode->Index = ix;
+			pNode = new TNode<T>(v);
 		} else {
 			ASSERT(this->m_pDeleted->pRight==(TNode<T>*)(-1));
 			pNode = this->m_pDeleted;
-			m_pDeleted = m_pDeleted->pLeft;
+			m_pDeleted   = m_pDeleted->pLeft;
 			pNode->Value = v;
 		}
+		pNode->pLeft  = (TNode<T>*)NULL;
+		pNode->pRight = (TNode<T>*)NULL;
 		return pNode;
 	};
 
@@ -452,9 +474,9 @@ private:
 	};
 
 private:
-	TNode<T> *m_pLeftMost;
-	TNode<T> *m_pRightMost;
-	TNode<T> *m_pDeleted;
+	TNode <T>         *m_pLeftMost;
+	TNode <T>         *m_pRightMost;
+	TNode <T>         *m_pDeleted;
 };
 
 #endif
