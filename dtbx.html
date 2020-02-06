@@ -127,7 +127,7 @@ The resulting divided submatrices can be obtained by y[],x[],and sizes[].
 <code>
                    int IsNonZeroElement(void *A,int i,int j,int n)
                    {
-	                if(((double*)A)[MAT_INDEX(i,j,n)]!=0.0) return 1;
+	                if(((double*)A)[INDEX2(i,j,n)]!=0.0) return 1;
 	                return 0;
                    }
 </code>
@@ -188,9 +188,9 @@ Linear equation system solver offers functions to solve linear equation systems 
 where A is a coefficient matrix of size n,x is a solution vector,and b is a constant vector.<br/>
 The main functions are:<br/>
 <ul>
-<li><b><u>int DtxLeqSolve(double *x, double *A, double *b, int n)</u></b>  <br/>
+<li><b><u>int DtxLeqSolve(double x[], double A[], double b[], int n)</u></b>  <br/>
  Solves Ax=b directly(after LU decomposition)</li>
-<li><b><u>int DtxLeqDivSolve(double *x, double *A, double *b, int n)</u></b> <br/>
+<li><b><u>int DtxLeqDivSolve(double x[], double A[], double b[], int n)</u></b> <br/>
  Solves Ax=b by decomposing into smaller sized equations by calling <a href="#div">DtxDivideMatrix()</a> 
 and DtxLeqSolve().
 </li>
@@ -203,16 +203,16 @@ Both functions allocate some working memeries and free them on exit which may be
 <p/>
 <b>[Matrix indexing]</b><blockquote>
 Because C does not support multi-dimensional array like FORTRAN or other languages.<br/>
-To access A<sub>i,j</sub> element of A,use MAT_INDEX(i,j,n) macro defined in dtbx.h as
-<pre>  #define MAT_INDEX(i,j,M)   ((i)*(M)+j)</pre>
-If FORTRAN compatible memory allocation is prefferable,redefine MAT_INDEX(i,j,M) as
-<pre>  #define MAT_INDEX(i,j,M)   ((j)*(M)+i)</pre>
+To access A<sub>i,j</sub> element of A,use INDEX2(i,j,n) macro defined in dtbx.h as
+<pre>  #define INDEX2(i,j,M)   ((i)*(M)+j)</pre>
+If FORTRAN compatible memory allocation is prefferable,redefine INDEX2(i,j,M) as
+<pre>  #define INDEX2(i,j,M)   ((j)*(M)+i)</pre>
 and re-compile everything.
 </blockquote>
 <p/>
 Linear equation system solver offers 2 more fuinctions:
 <ul>
-<li><b><u>int DtxLuDecompose(double *A, double *scales, int *index, int n)</u></b>
+<li><b><u>int DtxLuDecompose(double A[], double scales[], int index[], int n)</u></b>
 <pre>
    decompose given matrix A to LU form. L is the lower triangular, and U is the upper triangular matrix.
    L and U are stored A.
@@ -224,7 +224,7 @@ Linear equation system solver offers 2 more fuinctions:
           -k(negative), failed to decompose when processing A[k-1,*].
 </pre>
 </li>
-<li><b><u>void DtxLuSolve(double *x, double *A, double *b, int *index, int n)
+<li><b><u>void DtxLuSolve(double x[], double A[], double b[], int index[], int n)
 </u></b>
 <pre>
    solves linear equation system Ax=b, A must be processed by DtxLuDecompose() before hand.
@@ -232,6 +232,19 @@ Linear equation system solver offers 2 more fuinctions:
 </pre>
 </li>
 </ul>
+
+<H3>Linear equation system solver by indexing</H3>
+DtxLeqDivSolve() internally allocates sub-matrices obtained by dividing A.<br/>
+The following 3 functions use indexing instead of allocating sub-matrices.<br/>
+Arrays I[] and J[] specify indexes of sub-matrices.<br/>
+n ... size of sub-matrix.<br>
+N ... size of A and x,b.
+<ul>
+<li><b><u>int  DtxLeqDivIndexSolve(double x[], double A[], double b[], int n)</u></b></li>
+<li><b><u>int  DtxLuIndexDecomp(double A[],int N,int I[], int J[], int n)</u></b> ... DtxLeqDivIndexSolve() prepaires I[] and J[]. </li>
+<li><b><u>void DtxLuIndexSolve(double x[], double LU[], double b[],int N,int I[],int J[],int n)</u></b></li>
+</ul>
+Note:A and b are [IN/OUT],x is [OUT].
 
 <a name="#sort"></a>
 <H2>Sorting</H2>
