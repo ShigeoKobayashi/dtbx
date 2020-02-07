@@ -2,8 +2,11 @@
 [Digital Toolbox (C/C++ API library)](http://www.tinyforest.jp/oss/dtbx.html)
 
 Digital Toolbox (C/C++ API library) offers some useful functions(as of 2019) such as:
+
  1.Matrix block triangular decomposition
+ 
  2.Linear equation system solver
+ 
  3.Sorting
 
 Matrix block triangular decomposition is sometimes useful to solve linear equation system such as
