@@ -17,7 +17,7 @@
 // L and U are stored A.
 //  A         ... [IN/OUT], Matrix to be decomposed,and result of decomposition are stored on exit.
 //  scales[n] ... [OUT], work array for pivotting.
-//  index [n] ... [OUT], indices for pivotting,which is used later in DtxLuSolve()
+//  index [n] ... [OUT], indices for pivotting/scaling,which is used later in DtxLuSolve()
 //
 // returns 0,  normally decomposed.
 //        -k(negative), failed to decompose when processing A[k-1,*].
@@ -90,10 +90,12 @@ DTX_EXPORT(int)
 
 
 //
-// decompose sub-matrix of A to LU form without scaling/pivotting.
-// L is the lower triangular, and U is the upper triangular matrix that are subset of A.
+// Decompose submatrix(=a) of A to LU form without scaling/pivotting.
+// L is the lower triangular, and U is the upper triangular matrix that are subset of A(a=LU).
 // L and U are stored to A.
-//  A         ... [IN/OUT], Matrix to be decomposed,and result of decomposition are stored on exit.
+//  A[N]        ... [IN/OUT], Matrix including sub-matrix to be decomposed,and result of decomposition are stored on exit.
+//  I[n],J[n]   ... [IN],     Arrays describing the submatrix decomposed.
+//                            Note: a[I[i],J[j]] == A[i,j]. The size of a is n.
 // returns 0,  normally decomposed.
 //        -k(negative), failed to decompose when processing A[k-1,*].
 //
@@ -127,7 +129,7 @@ DTX_EXPORT(int)
 //
 // solves linear equation system Ax=b, A(=LU) must be priocessed by DtxLuDecomp() before hand.
 //
-// index[n] must be the array processed by DtxLuDecompose().
+// index[n] must be the array processed by DtxLuDecomp().
 // 
 DTX_EXPORT(void) 
 	DtxLuSolve(double *x, double *LU, double *b, int *index, int n)
@@ -151,8 +153,15 @@ DTX_EXPORT(void)
 }
 
 //
-// solves linear equation system Ax=b, where A is a sub-matrix of LU which must be priocessed by DtxLuIndexDecomp() before hand.
-// 
+// solves linear equation system ax=b, where a is the submatrix of LU which must be priocessed by DtxLuIndexDecomp() before hand.
+// The equation system solved is described by I[] and J[] of size n.
+// The sizes of x,LU,and b are N, and equations solved are indicated by I[] and J[].
+//
+// x[N]      ... [OUT],    answer 
+// LU[N,N]   ... [IN/OUT], LU matrix proccessed by DtxLuIndexDecomp().
+// b[N]      ... [IN/OUT], constant vector(Note:elements are changed on exit)
+// I[n],J[n] ... [IN], indeces describing submatrix. x[J[j]] are computed(j=0,1,..,n).
+//
 DTX_EXPORT(void) 
 	DtxLuIndexSolve(double x[], double LU[], double b[],int N,int I[],int J[],int n)
 {
@@ -183,6 +192,11 @@ DTX_EXPORT(void)
 }
 
 
+//
+// Solves Ax = b by LU decomposition with scaling/pivotting,
+// iInternally calls DtxLuDecomp() and DtxLuSolve().
+// Contents of A are destroyed on exit.
+// 
 DTX_EXPORT(int) 
 	DtxLeqSolve(double *x, double *A, double *b, int n)
 {
@@ -210,6 +224,12 @@ int IsNonZeroElement(void *A,int i,int j,int n)
 	return 0;
 }
 
+//
+// Solves Ax = b by block triangular decomposition,and each block will be solved by LU decomposition with scaling/pivotting,
+// A will be decompsed to submatrices by DtxDivideMatrix().
+// iInternally calls DtxLuDecomp() and DtxLuSolve().
+// Contents of A may be destroyed on exit.
+// 
 DTX_EXPORT(int) 
 	DtxLeqDivSolve(double *x, double *A, double *b, int n)
 {
@@ -313,6 +333,13 @@ DTX_EXPORT(int)
 	return 0;
 }
 
+//
+// Solves Ax = b by block triangular decomposition,and each block will be solved by LU decomposition without scaling/pivotting,
+// (All diagonal elements of submatrices decomposed are no-zero.)
+// A will be decomposed to submatrices by DtxDivideMatrix().
+// Internally calls DtxLuIndexDecomp() and DtxLuIndexSolve().
+// Contents of A and b are destroyed on exit.
+// 
 DTX_EXPORT(int) 
 	DtxLeqDivIndexSolve(double *x, double *A, double *b, int n)
 {
